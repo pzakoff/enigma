@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Retro Windows Room Reservation Calendar</title>
+  <link rel="stylesheet" href="src/css/style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+</head>
+<body>
+  <!-- Load Luxon for date handling -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/luxon/3.3.0/luxon.min.js"></script>
+
+  <!-- Sign In Button Container (visible before login) -->
+  <div id="signin-container">
+    <button id="google-signin-btn">Sign In with Google</button>
+  </div>
+
+  <!-- Reservation Popup for Hover Details -->
+  <div id="reservation-popup"></div>
+
+  <!-- Calendar App Container (hidden before login) -->
+  <div id="calendar-app" style="display: none;">
+    <div class="calendar-header">
+      <select id="calendar-selector">
+        <option value="main">Main Calendar</option>
+      </select>
+      <button id="edit-properties">Edit Properties</button>
+      <button id="edit-rooms">Edit Rooms</button>
+      <button id="add-reservation-btn">+ Add Reservation</button>
+      <button id="reservation-info-btn">Reservation Information</button>
+      <button id="dashboard-btn">Dashboard</button>
+    </div>
+
+    <!-- Month/Year Navigation -->
+    <div class="month-year-navigation">
+      <button id="prev-month">Prev</button>
+      <select id="month-picker">
+        <option value="0">January</option>
+        <option value="1">February</option>
+        <option value="2">March</option>
+        <option value="3">April</option>
+        <option value="4">May</option>
+        <option value="5">June</option>
+        <option value="6">July</option>
+        <option value="7">August</option>
+        <option value="8">September</option>
+        <option value="9">October</option>
+        <option value="10">November</option>
+        <option value="11">December</option>
+      </select>
+      <select id="year-picker"></select>
+      <button id="next-month">Next</button>
+    </div>
+
+    <!-- Calendar Display Container -->
+    <div id="calendar"></div>
+
+    <!-- Sign Out Container -->
+    <div id="signout-container">
+      <button id="signout-btn">Sign Out</button>
+    </div>
+  </div>
+
+  <!-- Modal Overlay (used by all modals) -->
+  <div id="modal-overlay"></div>
+
+  <!-- Dashboard Modal -->
+  <div id="dashboard-modal" class="modal">
+    <div class="modal-content" style="max-width: 800px;">
+      <span id="close-dashboard" class="close">&times;</span>
+      <h2>Dashboard</h2>
+      <p>Welcome to your Dashboard!</p>
+      <p>Here you can view summary statistics, upcoming reservations, and occupancy rates.</p>
+      <!-- Sample dashboard content. You can replace this with charts, lists, or any other data -->
+      <div id="dashboard-stats">
+        <ul>
+          <li>Total Reservations: <span id="total-reservations">0</span></li>
+          <li>Active Properties: <span id="active-properties">0</span></li>
+          <li>Current Month Occupancy: <span id="current-occupancy">0%</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Room Editor Modal -->
+  <div id="room-editor">
+    <h2>Edit Rooms</h2>
+    <ul id="room-list"></ul>
+    <!-- New Add Room Form with Max Occupancy -->
+    <div id="room-editor-form" style="margin-top:10px; padding:10px; border:1px solid #0071c2; border-radius:4px;">
+      <label for="new-room-name">Room Name:</label>
+      <input type="text" id="new-room-name" placeholder="New Room Name" style="margin-right:10px;">
+      <label for="new-room-color">Color:</label>
+      <input type="color" id="new-room-color" value="#0071c2" style="margin-right:10px;">
+      <label for="new-room-occupancy">Max Occupancy:</label>
+      <input type="number" id="new-room-occupancy" min="1" value="4" style="width:60px; margin-right:10px;">
+      <button id="add-room-btn">Add Room</button>
+    </div>
+    <button id="close-room-editor">Close</button>
+  </div>
+
+  <!-- Property Editor Modal -->
+  <div id="property-editor">
+    <h2>Edit Properties</h2>
+    <ul id="property-list"></ul>
+    <button id="add-new-property-btn">Add Property</button>
+    <button id="close-property-editor">Close</button>
+  </div>
+
+  <!-- Reservation Editor Modal -->
+  <!-- Removed the extra header below – header will be created dynamically by ReservationEditorUI -->
+  <div id="reservation-editor">
+    <!-- The draggable header will be injected dynamically -->
+    
+    <div id="reservation-property-div">
+      <label for="reservation-property-selector">Property:</label>
+      <select id="reservation-property-selector"></select>
+    </div>
+
+    <div id="reservation-room-div">
+      <label for="reservation-room-selector">Room:</label>
+      <select id="reservation-room-selector"></select>
+    </div>
+
+    <div id="reservation-date-div">
+      <label for="reservation-date-range">Reservation Dates:</label>
+      <input type="text" id="reservation-date-range" placeholder="Select date range" readonly>
+      <input type="hidden" id="reservation-start-date">
+      <input type="hidden" id="reservation-end-date">
+    </div>
+
+    <div id="reservation-guests-div">
+      <label for="reservation-num-guests">Number of Guests:</label>
+      <select id="reservation-num-guests">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+      </select>
+      <div id="reservation-guests-container"></div>
+    </div>
+
+    <!-- Breakfast Fields -->
+    <div id="reservation-breakfast-div" style="margin-bottom:10px;">
+      <label for="reservation-breakfast">Breakfast:</label>
+      <input type="checkbox" id="reservation-breakfast">
+      <label for="reservation-breakfast-count" style="margin-left:10px;">Breakfast Count:</label>
+      <input type="number" id="reservation-breakfast-count" min="0" value="0" style="width:60px;">
+    </div>
+
+    <div id="reservation-price-div">
+      <label for="reservation-price">Price:</label>
+      <input type="text" id="reservation-price">
+    </div>
+
+    <div id="reservation-additional-info-div">
+      <label for="reservation-additional-info">Additional Information:</label>
+      <textarea id="reservation-additional-info"></textarea>
+    </div>
+
+    <!-- Color Picker Field -->
+    <div id="reservation-color-div">
+      <label for="reservation-color">Reservation Color:</label>
+      <input type="color" id="reservation-color" value="#0071c2">
+    </div>
+
+    <!-- Reservation Source Field -->
+    <div id="reservation-source-div">
+      <label for="reservation-source">Reservation Source:</label>
+      <select id="reservation-source">
+        <option value="airbnb">AirBNB</option>
+        <option value="booking">Booking</option>
+        <option value="personal">Personal</option>
+      </select>
+    </div>
+
+    <div style="text-align:center;">
+      <button id="save-reservation-btn">Save Reservation</button>
+      <button id="delete-reservation-btn" style="display:none;">Delete Reservation</button>
+      <button id="close-reservation-editor">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Reservation Information Modal -->
+  <div id="reservation-info-modal" class="modal">
+    <div class="modal-content">
+      <span id="close-reservation-info" class="close">&times;</span>
+      <h2>Reservation Information</h2>
+      <div class="filter-container">
+        <label for="info-start-date">Start Date:</label>
+        <input type="text" id="info-start-date" placeholder="Select start date" readonly>
+        <label for="info-end-date">End Date:</label>
+        <input type="text" id="info-end-date" placeholder="Select end date" readonly>
+        <label for="info-property-selector">Property:</label>
+        <select id="info-property-selector">
+          <!-- Options will be populated dynamically -->
+        </select>
+        <button id="filter-info-btn">Filter</button>
+        <button id="export-csv-btn">Export CSV</button>
+        <button id="export-pdf-btn">Export PDF</button>
+      </div>
+      <table id="reservation-info-table">
+        <thead>
+          <tr>
+            <th>Reservation Period</th>
+            <th>Guest Name</th>
+            <th>Phone</th>
+            <th>Personal Number</th>
+            <th>Email</th>
+            <th>Additional Info</th>
+            <th>Source</th>
+            <th>Price</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Reservation rows will be inserted here -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  <!-- jsPDF and AutoTable for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+  <!-- Main App Script (ES Module) -->
+  <script type="module" src="src/js/app.js"></script>
+</body>
+</html>
